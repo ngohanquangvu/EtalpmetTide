@@ -1,0 +1,151 @@
+app = customtkinter.CTk()
+app.geometry(f"{1100}x{580}")
+app.title("Edit Template")
+
+app.grid_columnconfigure((2, 3), weight=1)
+app.grid_rowconfigure((2, 3), weight=1)
+
+
+#side bar
+
+sidebar_frame = customtkinter.CTkFrame(app, width=230, height=580)
+sidebar_frame.grid(row=0, column=0, rowspan=4, sticky="nsew")
+
+label_mail = customtkinter.CTkLabel(sidebar_frame, text="LOGIN WITH EMAIL\n AND PASSWORD", font=("Arial", 20))
+label_mail.grid(row = 0, column = 0, padx = 10, pady = 20)
+
+mail_input = customtkinter.CTkEntry(sidebar_frame, placeholder_text="Email", width=210, corner_radius=2)
+mail_input.grid(row = 2, column = 0, pady = 10, padx = 10)
+
+pass_input = customtkinter.CTkEntry(sidebar_frame, placeholder_text="Password", width=210, corner_radius=2)
+pass_input.grid(row = 4, column = 0, pady = 10, padx = 10)
+
+
+or_label = customtkinter.CTkLabel(sidebar_frame, text="━━━━━  OR  ━━━━━", font=("Arial", 10))
+or_label.grid(row = 8, column = 0, padx = 10, pady = 10)
+
+def open_file():
+
+    file_path = filedialog.askopenfilename(filetypes=[("HTML files", "*.html")])
+    if file_path:
+        with open(file_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        html_edit.delete("1.0", "end")
+        html_edit.insert("1.0", html)
+        html_view.set_html(html)
+
+
+input_template = customtkinter.CTkButton(sidebar_frame, text="IMPORT TEMPLATE", width=210, height=40, command=open_file)
+input_template.grid(row = 12, column = 0, padx = 10, pady = 10)
+
+def save_file():
+    html = html_edit.get("1.0", "end")
+    file_path = filedialog.asksaveasfilename(filetypes=[("HTML files", "*.html")])
+    if file_path:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(html)
+
+save_button = customtkinter.CTkButton(sidebar_frame, text="SAVE TEMPLATE", width=210, height=40, command=save_file)
+save_button.grid(row = 14, column = 0, padx = 10, pady = 10)
+
+#mail
+
+def read_mailbox():
+    def run():
+        imap_host = 'outlook.office365.com'
+        imap_user = mail_input.get()
+        imap_pass = pass_input.get()
+
+        imap = imaplib.IMAP4_SSL(imap_host)
+
+        imap.login(imap_user, imap_pass)
+
+
+        imap.select('INBOX')
+
+
+        status, messages = imap.search(None, 'ALL')
+
+        messages = messages[0].split(b' ')
+        latest = int(messages[-1])
+
+        status, data = imap.fetch(str(latest), '(RFC822)')
+
+        raw_email = data[0][1].decode('utf-8')
+
+        email_message = email.message_from_string(raw_email)
+
+        subject = email_message['Subject']
+        sender = email_message['From']
+        recipient = email_message['To']
+
+        content = ''
+        if email_message.is_multipart():
+
+            for part in email_message.walk():
+                if part.get_content_type() == 'text/html':
+                    content = part.get_payload(decode=True).decode('utf-8')
+        else:
+            content = email_message.get_payload(decode=True).decode('utf-8')
+
+        imap.close()
+        imap.logout()
+        html_edit.delete("1.0", "end")
+        html_edit.insert("1.0", content)
+        html_view.set_html(content)
+    t = threading.Thread(target=run)
+    t.start()
+
+get_inbox = customtkinter.CTkButton(sidebar_frame, text="LOGIN AND GET INBOX", width = 210, height=40, command=read_mailbox)
+get_inbox.grid(row = 6, column = 0, padx = 10, pady = 10)
+
+
+#main
+
+
+def update_html(event):
+    html = html_edit.get("1.0", "end")
+    html_view.set_html(html)
+
+
+def highlight_html(event):
+
+    text = html_view.selection_get()
+    if text:
+
+        index = html_edit.search(text, 1.0, customtkinter.END)
+        if index:
+
+            html_edit.tag_remove("blink", 1.0, customtkinter.END)
+
+            end_index = html_edit.index(f"{index}+{len(text)}c")
+
+            html_edit.tag_add("blink", index, end_index)
+
+            html_edit.tag_config("blink", background="yellow", foreground = "black")
+
+            html_edit.see(index)
+            def blink():
+                bg = html_edit.tag_cget("blink", "background")
+                fg = html_edit.tag_cget("blink", "foreground")
+                html_edit.tag_config("blink", background=fg, foreground=bg)
+                app.after(700, blink)
+            blink()
+
+frame = customtkinter.CTkFrame(app)
+frame.grid(row=0, column=2)
+
+html_view = HTMLText(frame)
+html_view.pack(fill="both", expand=True, side="left")
+
+
+html_edit = customtkinter.CTkTextbox(frame, width=350, height=580, fg_color="black")
+html_edit.pack(fill="both", expand=True, side = "left")
+
+
+html_edit.bind("<KeyRelease>", update_html)
+
+html_view.bind("<Button-1>", highlight_html)
+
+
+app.mainloop()
