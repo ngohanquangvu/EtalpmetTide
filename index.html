@@ -130,7 +130,7 @@ def highlight_html(event):
 
                     html_edit.tag_add("blink", index, end_index)
 
-                    html_edit.tag_config("blink", background="yellow", foreground = "white")
+                    html_edit.tag_config("blink", background="yellow", foreground = "black")
 
                     html_edit.see(index)
                     def blink():
@@ -143,8 +143,35 @@ def highlight_html(event):
     t = threading.Thread(target=run)
     t.start()
 
+def search(event):
+    html_edit.tag_remove('found', '1.0', 'end') # remove previous highlights
+    s = entry_find.get() # get the text from the entry
+    if s:
+        idx = '1.0'
+        while True:
+            idx = html_edit.search(s, idx, nocase=1, stopindex='end') # search for the text
+            if not idx: break # if not found, break the loop
+            lastidx = '%s+%dc' % (idx, len(s)) # get the index of the last character
+            html_edit.tag_add("blink", idx, lastidx)
+
+            html_edit.tag_config("blink", background="yellow", foreground = "black")
+
+            html_edit.see(idx)
+            def blink():
+                bg = html_edit.tag_cget("blink", "background")
+                fg = html_edit.tag_cget("blink", "foreground")
+                html_edit.tag_config("blink", background=fg, foreground=bg)
+                app.after(700, blink)
+            blink()
+            idx = lastidx
+        html_edit.tag_config("blink", background="yellow", foreground = "black") # configure the tag to have red color
+    entry_find.focus_set() # set the focus back to the entry
+
 frame = customtkinter.CTkFrame(app)
 frame.grid(row=0, column=2)
+
+entry_find = customtkinter.CTkEntry(sidebar_frame, placeholder_text="Nhập nội dung muốn tìm", width=210, height=40)
+entry_find.grid(row = 18, column = 0, padx = 10, pady = 10)
 
 html_view = HTMLText(frame, yscrollcommand = True, xscrollcommand = True)
 html_view.pack(fill="both", expand=True, side="left")
@@ -155,6 +182,7 @@ html_edit.pack(fill="both", expand=True, side = "left")
 
 
 html_view.bind("<Button-1>", highlight_html)
+entry_find.bind("<Return>", search)
 
 
 app.mainloop()
