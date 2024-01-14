@@ -103,34 +103,46 @@ get_inbox.grid(row = 6, column = 0, padx = 10, pady = 10)
 #main
 
 
-def update_html(event):
-    html = html_edit.get("1.0", "end")
-    html_view.set_html(html)
+def update_html():
+    def run():
+        try:
+            html = html_edit.get("1.0", "end")
+            html_view.set_html(html)
+        except:pass
+    t = threading.Thread(target=run)
+    t.start()
+
+update_button = customtkinter.CTkButton(sidebar_frame, text="UPDATE TEMPLATE", width=210, height=40, command=update_html)
+update_button.grid(row = 16, column = 0, padx = 10, pady = 10)
 
 
 def highlight_html(event):
+    def run():
+        try:
+            text = html_view.selection_get()
+            if text:
 
-    text = html_view.selection_get()
-    if text:
+                index = html_edit.search(text, 1.0, customtkinter.END)
+                if index:
 
-        index = html_edit.search(text, 1.0, customtkinter.END)
-        if index:
+                    html_edit.tag_remove("blink", 1.0, customtkinter.END)
 
-            html_edit.tag_remove("blink", 1.0, customtkinter.END)
+                    end_index = html_edit.index(f"{index}+{len(text)}c")
 
-            end_index = html_edit.index(f"{index}+{len(text)}c")
+                    html_edit.tag_add("blink", index, end_index)
 
-            html_edit.tag_add("blink", index, end_index)
+                    html_edit.tag_config("blink", background="yellow", foreground = "black")
 
-            html_edit.tag_config("blink", background="yellow", foreground = "black")
-
-            html_edit.see(index)
-            def blink():
-                bg = html_edit.tag_cget("blink", "background")
-                fg = html_edit.tag_cget("blink", "foreground")
-                html_edit.tag_config("blink", background=fg, foreground=bg)
-                app.after(700, blink)
-            blink()
+                    html_edit.see(index)
+                    def blink():
+                        bg = html_edit.tag_cget("blink", "background")
+                        fg = html_edit.tag_cget("blink", "foreground")
+                        html_edit.tag_config("blink", background=fg, foreground=bg)
+                        app.after(700, blink)
+                    blink()
+        except:pass
+    t = threading.Thread(target=run)
+    t.start()
 
 frame = customtkinter.CTkFrame(app)
 frame.grid(row=0, column=2)
@@ -142,8 +154,6 @@ html_view.pack(fill="both", expand=True, side="left")
 html_edit = customtkinter.CTkTextbox(frame, width=350, height=580, fg_color="black")
 html_edit.pack(fill="both", expand=True, side = "left")
 
-
-html_edit.bind("<KeyRelease>", update_html)
 
 html_view.bind("<Button-1>", highlight_html)
 
