@@ -25,14 +25,16 @@ or_label = customtkinter.CTkLabel(sidebar_frame, text="━━━━━  OR  ━�
 or_label.grid(row = 8, column = 0, padx = 10, pady = 10)
 
 def open_file():
-
-    file_path = filedialog.askopenfilename(filetypes=[("HTML files", "*.html")])
-    if file_path:
-        with open(file_path, "r", encoding="utf-8") as f:
-            html = f.read()
-        html_edit.delete("1.0", "end")
-        html_edit.insert("1.0", html)
-        html_view.set_html(html)
+    def run():
+        file_path = filedialog.askopenfilename(filetypes=[("HTML files", "*.html")])
+        if file_path:
+            with open(file_path, "r", encoding="utf-8") as f:
+                html = f.read()
+            html_edit.delete("0.0", "end")
+            html_edit.insert("1.0", html)
+            html_view.set_html(html)
+    t = threading.Thread(target=run)
+    t.start()
 
 
 input_template = customtkinter.CTkButton(sidebar_frame, text="IMPORT TEMPLATE", width=210, height=40, command=open_file)
@@ -75,9 +77,6 @@ def read_mailbox():
 
         email_message = email.message_from_string(raw_email)
 
-        subject = email_message['Subject']
-        sender = email_message['From']
-        recipient = email_message['To']
 
         content = ''
         if email_message.is_multipart():
@@ -131,7 +130,7 @@ def highlight_html(event):
 
                     html_edit.tag_add("blink", index, end_index)
 
-                    html_edit.tag_config("blink", background="yellow", foreground = "black")
+                    html_edit.tag_config("blink", background="yellow", foreground = "white")
 
                     html_edit.see(index)
                     def blink():
@@ -147,11 +146,11 @@ def highlight_html(event):
 frame = customtkinter.CTkFrame(app)
 frame.grid(row=0, column=2)
 
-html_view = HTMLText(frame)
+html_view = HTMLText(frame, yscrollcommand = True, xscrollcommand = True)
 html_view.pack(fill="both", expand=True, side="left")
 
 
-html_edit = customtkinter.CTkTextbox(frame, width=350, height=580, fg_color="black")
+html_edit = customtkinter.CTkTextbox(frame, width=350, height=580, fg_color="white", text_color="black")
 html_edit.pack(fill="both", expand=True, side = "left")
 
 
